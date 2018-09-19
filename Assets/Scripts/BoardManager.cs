@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Random = UnityEngine.Random; // uses Unity's Random generator, not C#
 
 public class BoardManager : MonoBehaviour {
@@ -11,7 +12,7 @@ public class BoardManager : MonoBehaviour {
         public int minimum;
         public int maximum;
 
-        public Count (int min, int max)
+        public Count(int min, int max)
         {
             minimum = min;
             maximum = max;
@@ -28,6 +29,7 @@ public class BoardManager : MonoBehaviour {
 
     [Header("Prefabs used in level creation:")]
     public GameObject exit;
+    public GameObject junk;
     public GameObject[] floorTiles;
     public GameObject[] wallTiles;
     public GameObject[] foodTiles;
@@ -35,6 +37,9 @@ public class BoardManager : MonoBehaviour {
     public GameObject[] outerWallTiles;
 
     private Transform boardHolder;
+
+    private Slider loadingSlider;
+    private float currentLoadPercent = 0;
 
     private List<Vector3> gridPositions = new List<Vector3>();
 
@@ -51,6 +56,16 @@ public class BoardManager : MonoBehaviour {
                 gridPositions.Add(new Vector3(x, y, 0f));
             }
         }
+
+        UpdateLoadProgress(.33f);
+    }
+
+    void UpdateLoadProgress(float amountCompleted)
+    {
+        loadingSlider = GameManager.Instance.loadingSlider;
+
+        currentLoadPercent += amountCompleted;
+        loadingSlider.value = currentLoadPercent;
     }
 
     // Sets up board tiles
@@ -74,6 +89,8 @@ public class BoardManager : MonoBehaviour {
                 instance.transform.SetParent(boardHolder);
             }
         }
+
+        UpdateLoadProgress(.33f);
     }
 
     // returns a random position on the playable area; removes that choice from future possibilities
@@ -104,7 +121,11 @@ public class BoardManager : MonoBehaviour {
         InitializeList();
 
         LayoutObjectAtRandom(wallTiles, wallCount.minimum, wallCount.maximum);
-        LayoutObjectAtRandom(foodTiles, foodCount.minimum, foodCount.minimum);
+        LayoutObjectAtRandom(foodTiles, foodCount.minimum, foodCount.maximum);
+
+        // place the map's junk powerup
+        Vector3 junkPosition = RandomPosition();
+        Instantiate(junk, junkPosition, Quaternion.identity);
 
         // enemies # based on logarithmic difficulty curve
         int enemyCount = (int)Mathf.Log(level, 2f);
@@ -112,5 +133,7 @@ public class BoardManager : MonoBehaviour {
 
         // exit always in the same location
         Instantiate(exit, new Vector3(columns - 1, rows - 1, 0f), Quaternion.identity);
+
+        UpdateLoadProgress(.33f);
     }
 }
